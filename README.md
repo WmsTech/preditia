@@ -1,77 +1,61 @@
-# ⚙️ PreditIA: Sistema Inteligente de Manutenção Preditiva
+# PreditIA
 
-![Painel PreditIA](img/dashboard.png)
+Um painel em Python para explorar a classificação do estado de um motor de indução trifásico a partir de temperatura, vibração e corrente elétrica. O projeto foi desenvolvido para um desafio de inovação e tecnologia da Spin Engenharia.
 
-O **PreditIA** é uma solução de Monitoramento Industrial 4.0 que utiliza Machine Learning para diagnosticar a saúde de motores de indução trifásicos em tempo real. O projeto simula o ciclo completo de um engenheiro de dados: desde a geração de sinais ruidosos até a implementação de um dashboard preditivo.
+![Painel do PreditIA com os controles de sensores e o estado estimado do motor](img/dashboard.png)
 
-## 🚀 Funcionalidades
+O trabalho reúne geração de dados, tratamento de leituras inconsistentes, treinamento de uma Random Forest e uma interface em Streamlit. Os sensores são simulados: os controles permitem mudar os valores e observar como a classificação responde.
 
-- **Monitoramento em Tempo Real:** Interface interativa para ajuste de parâmetros de Temperatura, Vibração e Corrente.
-- **Diagnóstico com IA:** Classificação instantânea do estado do motor (*Saudável*, *Alerta* ou *Falha*) com cálculo de nível de certeza.
-- **Pipeline de Dados Robusto:** Tratamento automático de falhas de sensores, outliers e despadronização de dados.
-- **Visualização Industrial:** Gráficos de Gauge (velocímetros) e métricas dinâmicas para fácil interpretação.
+## Do dado ao painel
 
-## 🛠️ Tecnologias Utilizadas
+1. `gerador.py` cria 1.500 registros sintéticos em três faixas de operação. Inclui valores ausentes, temperaturas com vírgula e correntes negativas para exercitar o tratamento dos dados.
+2. `tratamento_dados.py` converte os tipos, trata valores fora das faixas definidas, preenche lacunas e atribui os rótulos `Saudavel`, `Alerta` e `Falha`.
+3. `machine_learning.py` separa 80% dos dados para treino e 20% para teste, treina uma Random Forest com 50 árvores e profundidade máxima de 5 e salva o modelo com Joblib.
+4. `app.py` carrega o modelo e apresenta a classificação para os valores escolhidos.
 
-- **Linguagem:** Python 3.11
-- **Bibliotecas de Dados:** Pandas, NumPy
-- **Machine Learning:** Scikit-Learn (Random Forest Classifier)
-- **Interface Gráfica:** Streamlit
-- **Visualização:** Plotly
-- **Serialização:** Joblib
+**Tecnologias:** Python, pandas, NumPy, scikit-learn, Joblib, Streamlit e Plotly.
 
-## 📁 Estrutura do Projeto
+## Critérios do experimento
 
-* `gerador.py`: Cria dados sintéticos baseados em distribuições normais, simulando três fases de operação e injetando "caos" (erros de leitura e NaNs).
-* `tratamento_dados.py`: Realiza a limpeza dos dados brutos, corrige tipos de variáveis, trata outliers e rotula os dados conforme normas técnicas.
-* `machine_learning.py`: Treina o modelo Random Forest e exporta o "cérebro" do sistema (`.pkl`).
-* `app.py`: O painel de controle interativo construído em Streamlit.
-* `preditia.bat`: Script de inicialização rápida para Windows.
-* `requirements.txt`: Lista de dependências para instalação do ambiente.
+Estes são os limites implementados em `classificar_estado`, em `tratamento_dados.py`:
 
-## 📈 Lógica de Diagnóstico (Critérios Técnicos)
+| Sinal | Entra em alerta a partir de | Entra em falha a partir de |
+| --- | ---: | ---: |
+| Temperatura | 100 °C | 130 °C |
+| Vibração | 2,3 mm/s | 4,5 mm/s |
+| Corrente | 15 A | 17,25 A |
 
-O sistema baseia-se em heurísticas de engenharia mecatrônica para a rotulagem:
+Basta um dos sinais atingir um limite para o registro receber o estado correspondente. A condição de falha tem prioridade. As cores dos medidores usam outras faixas e ainda precisam ser alinhadas a essa regra.
 
-| Parâmetro | Saudável | Alerta | Falha (Risco) |
-| :--- | :--- | :--- | :--- |
-| **Temperatura** | < 80°C | 80°C - 95°C | > 95°C |
-| **Vibração** | < 3.5 mm/s | 3.5 - 6.5 mm/s | > 6.5 mm/s |
-| **Corrente** | < 15A | 15A - 17.25A | > 17.25A |
+Os rótulos são produzidos por essas regras sobre dados simulados. Uma boa acurácia nesse conjunto indica que o modelo aprendeu a reproduzir os critérios do experimento; ela não mede antecipação de falhas em motores reais. O percentual mostrado como “certeza” na interface é a maior probabilidade retornada pelo classificador, sem uma avaliação de calibração.
 
-## 🔧 Como Executar
+## Executar localmente
 
-### Pré-requisitos
-Certifique-se de ter o Python instalado em sua máquina e todas as bibliotecas necessárias.
-- **Linguagem:** Python 3.11
-- **Bibliotecas de Dados:** Pandas, NumPy
-- **Machine Learning:** Scikit-Learn (Random Forest Classifier)
-- **Interface Gráfica:** Streamlit
-- **Visualização:** Plotly
-- **Serialização:** Joblib
+Com Python 3.11 e Git instalados, no PowerShell:
 
-### Execução
-* É possivel acessar a aplicação de duas formas
+```powershell
+git clone https://github.com/WmsTech/preditia.git
+cd preditia
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python -m streamlit run app.py
+```
 
+O repositório já contém os CSVs e `modelo_rf_motor_rf.pkl`. Caso a versão instalada do scikit-learn seja incompatível com o modelo salvo, treine-o novamente no mesmo ambiente:
 
-## 🚀 Diretamente na Web:
-   Acesse diretamente pelo site https://preditia-monitoramento.streamlit.app/
+```powershell
+.\.venv\Scripts\python machine_learning.py
+```
 
+Para refazer também os dados, a ordem é `gerador.py`, `tratamento_dados.py` e `machine_learning.py`. Esses scripts sobrescrevem os arquivos correspondentes. As dependências ainda não têm versões fixadas; a geração precisa de ajuste para versões do pandas que rejeitam texto em colunas numéricas.
 
-## 🚀 Como rodar localmente:
-Clone este repositório.
-   No Windows, basta executar o arquivo `preditia.bat`.
+Há também um [endereço de demonstração divulgado no projeto](https://preditia-monitoramento.streamlit.app/). Se estiver indisponível, use a execução local.
 
-Caso seja optado em realizar uma execução mais manual, garanta que todos os arquivos estejam em uma mesma pasta. Com isso, siga os seguintes passos:
-1. Instale as bibliotecas: `pip install -r requirements.txt`  # Caso não tenhsa sido instalado
-2. Gere os dados: `python gerador.py`
-3. Trate os dados: `python tratamento_dados.py`
-4. Treine a IA: `python machine_learning.py`
-5. Execute o App: `streamlit run app.py`
-   
-   
-   
-**Ou via terminal:**
-```bash
-pip install -r requirementes.txt
-streamlit run app.py
+## Próximos passos
+
+- Alinhar as cores dos medidores e os limites de classificação.
+- Comparar a Random Forest com a própria regra de rotulagem e registrar a matriz de confusão.
+- Fixar versões e tornar a geração e a divisão dos dados reproduzíveis.
+- Avaliar dados reais e evolução temporal antes de tratar o protótipo como um sistema de manutenção preditiva.
+
+Projeto de Washington Marinho dos Santos.
